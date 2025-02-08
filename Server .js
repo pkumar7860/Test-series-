@@ -107,3 +107,56 @@ app.get('/comments/:postId', async (req, res) => {
 
 // Start Server
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+require('dotenv').config();
+
+const app = express();
+const PORT = 5000;
+
+// Middleware
+app.use(express.json());
+app.use(cors());
+
+// Secret Key for JWT
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+
+// Verify Token Middleware
+const authenticateUser = (req, res, next) => {
+    const token = req.headers['authorization'];
+    if (!token) return res.status(401).json({ message: "Access Denied" });
+
+    jwt.verify(token.split(' ')[1], JWT_SECRET, (err, user) => {
+        if (err) return res.status(403).json({ message: "Invalid Token" });
+        req.user = user;
+        next();
+    });
+};
+
+// Comment Schema
+const commentSchema = new mongoose.Schema({
+    postId: mongoose.Schema.Types.ObjectId,
+    username: String,
+    comment: String,
+    createdAt: { type: Date, default: Date.now }
+});
+const Comment = mongoose.model('Comment', commentSchema);
+
+// Add Comment (Requires Authentication)
+app.post('/comments', authenticateUser, async (req, res) => {
+    const { postId, comment } = req.body;
+    const username = req.user.username; // Extracted from JWT
+
+    if (!comment) return res.status(400).json({ message: "Comment cannot be empty" });
+
+    const newComment = new Comment({ postId, username, comment });
+    await newComment.save();
+
+    res.json({ message: "Comment added successfully!" });
+});
+
+// Start Server
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
