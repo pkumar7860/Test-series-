@@ -1,1 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Blog</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
 
+    <nav>
+        <h1>My Blog</h1>
+        <a href="login.html">Login</a>
+    </nav>
+
+    <section class="blog-list">
+        <h2>Latest Posts</h2>
+        <div id="posts-container"></div>
+    </section>
+
+    <script>
+        fetch('http://localhost:5000/blogs')
+        .then(response => response.json())
+        .then(blogs => {
+            const container = document.getElementById('posts-container');
+            blogs.forEach(blog => {
+                const post = document.createElement('div');
+                post.innerHTML = `<h3>${blog.title}</h3><p>${blog.content.substring(0, 100)}...</p><a href="post.html?id=${blog._id}">Read More</a>`;
+                container.appendChild(post);
+            });
+        });
+    </script>
+
+</body>
+</html>
