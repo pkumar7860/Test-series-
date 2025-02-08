@@ -160,3 +160,74 @@ app.post('/comments', authenticateUser, async (req, res) => {
 
 // Start Server
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+
+const app = express();
+app.use(express.json());
+
+// Database Connection
+mongoose.connect('mongodb://localhost:27017/blogDB', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+});
+
+// User Schema
+const userSchema = new mongoose.Schema({
+    email: String,
+    password: String,
+    resetToken: String,
+    resetTokenExpiration: Date
+});
+const User = mongoose.model('User', userSchema);
+
+// Nodemailer Setup (Use a real email service in production)
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'your-email@gmail.com',
+        pass: 'your-email-password'
+    }
+});
+
+// Forgot Password Route
+app.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const token = crypto.randomBytes(32).toString('hex');
+    user.resetToken = token;
+    user.resetTokenExpiration = Date.now() + 3600000; // 1-hour expiry
+    await user.save();
+
+    const resetLink = `http://localhost:5000/reset-password?token=${token}`;
+    await transporter.sendMail({
+        to: email,
+        subject: "Password Reset",
+        text: `Click here to reset your password: ${resetLink}`
+    });
+
+    res.json({ message: "Password reset link sent to email" });
+});
+
+// Reset Password Route
+app.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+    const user = await User.findOne({ resetToken: token, resetTokenExpiration: { $gt: Date.now() } });
+
+    if (!user) return res.status(400).json({ message: "Invalid or expired token" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetToken = undefined;
+    user.resetTokenExpiration = undefined;
+    await user.save();
+
+    res.json({ message: "Password reset successful!" });
+});
+
+// Start Server
+app.listen(5000, () => console.log("Server running on http://localhost:5000"));
