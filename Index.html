@@ -33,3 +33,48 @@
 
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Post</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <nav>
+        <h1>My Blog</h1>
+        <a href="index.html">Home</a>
+    </nav>
+
+    <section class="blog-post">
+        <div id="post-content"></div>
+        <h3>Comments</h3>
+        <div id="comments-container"></div>
+        <input type="text" id="comment" placeholder="Write a comment">
+        <button onclick="addComment()">Submit</button>
+    </section>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const postId = params.get('id');
+
+        fetch(`http://localhost:5000/blogs/${postId}`)
+        .then(response => response.json())
+        .then(post => {
+            document.getElementById('post-content').innerHTML = `<h2>${post.title}</h2><p>${post.content}</p>`;
+        });
+
+        function addComment() {
+            const comment = document.getElementById('comment').value;
+            fetch('http://localhost:5000/comments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ postId, username: "Guest", comment })
+            }).then(() => location.reload());
+        }
+    </script>
+
+</body>
+</html>
