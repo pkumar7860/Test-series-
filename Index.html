@@ -143,3 +143,63 @@ if (!token) {
     alert("You need to login to access this page.");
     window.location.href = "login.html";
 }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgot Password</title>
+</head>
+<body>
+
+    <h2>Forgot Password</h2>
+    <input type="email" id="email" placeholder="Enter your email">
+    <button onclick="sendResetLink()">Send Reset Link</button>
+
+    <script>
+        function sendResetLink() {
+            const email = document.getElementById('email').value;
+            fetch('http://localhost:5000/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            }).then(res => res.json())
+            .then(data => alert(data.message));
+        }
+    </script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password</title>
+</head>
+<body>
+
+    <h2>Reset Password</h2>
+    <input type="password" id="newPassword" placeholder="Enter new password">
+    <button onclick="resetPassword()">Reset Password</button>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+
+        function resetPassword() {
+            const newPassword = document.getElementById('newPassword').value;
+            fetch('http://localhost:5000/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, newPassword })
+            }).then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                window.location.href = 'login.html';
+            });
+        }
+    </script>
+
+</body>
+</html>
