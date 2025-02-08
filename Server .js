@@ -231,3 +231,65 @@ app.post('/reset-password', async (req, res) => {
 
 // Start Server
 app.listen(5000, () => console.log("Server running on http://localhost:5000"));
+const express = require('express');
+const mongoose = require('mongoose');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+
+const app = express();
+app.use(express.json());
+
+mongoose.connect('mongodb://localhost:27017/blogDB', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+});
+
+// User Schema
+const userSchema = new mongoose.Schema({
+    googleId: String,
+    username: String,
+    email: String
+});
+const User = mongoose.model('User', userSchema);
+
+// Google OAuth Strategy
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: "/auth/google/callback"
+}, async (accessToken, refreshToken, profile, done) => {
+    let user = await User.findOne({ googleId: profile.id });
+
+    if (!user) {
+        user = new User({
+            googleId: profile.id,
+            username: profile.displayName,
+            email: profile.emails[0].value
+        });
+        await user.save();
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    done(null, { token, username: user.username });
+}));
+
+// Google Auth Route
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+app.get('/auth/google/callback', passport.authenticate('google', { session: false }), (req, res) => {
+    res.redirect(`http://localhost:5500/?token=${req.user.token}&username=${req.user.username}`);
+});
+
+// Start Server
+app.listen(5000, () => console.log("Server running on http://localhost:5000"));
+const params = new URLSearchParams(window.location.search);
+const token = params.get('token');
+const username = params.get('username');
+
+if (token) {
+    localStorage.setItem('token', token);
+    localStorage.setItem('username', username);
+    window.location.href = 'index.html';
+}
