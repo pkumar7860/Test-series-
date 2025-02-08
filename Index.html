@@ -78,3 +78,68 @@
 
 </body>
 </html>
+<section class="blog-post">
+    <div id="post-content"></div>
+    <h3>Comments</h3>
+    <div id="comments-container"></div>
+
+    <div id="comment-form">
+        <input type="text" id="comment" placeholder="Write a comment">
+        <button onclick="addComment()">Submit</button>
+    </div>
+    <p id="login-message" style="display: none;">
+        <a href="login.html">Login</a> to comment
+    </p>
+</section>
+
+<script>
+    const postId = new URLSearchParams(window.location.search).get('id');
+    const token = localStorage.getItem('token');
+    const username = localStorage.getItem('username');
+
+    if (!token) {
+        document.getElementById('comment-form').style.display = 'none';
+        document.getElementById('login-message').style.display = 'block';
+    }
+
+    function addComment() {
+        const comment = document.getElementById('comment').value;
+        if (!comment) return alert("Comment cannot be empty!");
+
+        fetch('http://localhost:5000/comments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ postId, comment })
+        }).then(() => location.reload());
+    }
+</script>
+<nav>
+    <h1>My Blog</h1>
+    <div id="auth-links">
+        <a href="login.html" id="login-link">Login</a>
+        <button id="logout-btn" style="display: none;">Logout</button>
+    </div>
+</nav>
+
+<script>
+    const token = localStorage.getItem('token');
+    const username = localStorage.getItem('username');
+
+    if (token) {
+        document.getElementById('login-link').style.display = 'none';
+        document.getElementById('logout-btn').style.display = 'inline-block';
+    }
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        window.location.href = 'login.html';
+    });
+</script>
+if (!token) {
+    alert("You need to login to access this page.");
+    window.location.href = "login.html";
+}
